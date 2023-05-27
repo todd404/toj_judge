@@ -9,6 +9,7 @@ import com.todd.judger.bean.StateMap;
 import com.todd.judger.util.SpringContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -22,21 +23,26 @@ public class JudgeController {
     SpringContextHolder springContextHolder;
 
     @PostMapping("/api/judge")
+    @CrossOrigin
     public JudgeUuid judge(@ModelAttribute PostJudgeForm form){
         JudgeUuid judgeUuid = new JudgeUuid(UUID.randomUUID());
 
-        Judge judge = springContextHolder.getJudge("cppJudge");
+        String judgeName = form.getLanguage() + "Judge";
+
+        Judge judge = springContextHolder.getJudge(judgeName);
+
         judge.setJudgeUuid(judgeUuid);
         judge.judgeCode(form.getProblemId(), form.getCode());
 
-        stateMap.setState(judgeUuid.getUuid(), new State("queuing", ""));
+        stateMap.setState(judgeUuid.getUuid(), new State("queuing", "排队中..."));
 
         return judgeUuid;
     }
 
     @GetMapping("/api/state")
+    @CrossOrigin
     public State getState(@RequestParam("uuid") String uuid){
-        State result = new State("wrong uuid", "");
+        State result = new State("error uuid", "判题任务出错...");
         if(!stateMap.hasUuid(uuid)){
             return result;
         }

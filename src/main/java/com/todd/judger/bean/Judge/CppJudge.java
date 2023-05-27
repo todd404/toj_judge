@@ -5,6 +5,7 @@ import com.todd.judger.Model.State;
 import com.todd.judger.bean.StateMap;
 import com.todd.judger.exception.CompleteException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -33,7 +34,8 @@ public class CppJudge extends Judge{
     }
 
     private void complete(String code) throws IOException, InterruptedException, CompleteException {
-        setState(new State("completing", ""));
+        Thread.sleep(3000);
+        setState(new State("completing", "编译中..."));
         File file = File.createTempFile(getJudgeUuid().getUuid(), ".cpp");
         FileWriter fileWriter = new FileWriter(file);
         fileWriter.write(code);
@@ -49,12 +51,13 @@ public class CppJudge extends Judge{
 
         process.waitFor();
         if(process.exitValue() != 0){
-            throw new CompleteException("f");
+            throw new CompleteException("编译错误...");
         }
     }
 
     private void run() throws IOException, InterruptedException {
-        setState(new State("running", ""));
+        Thread.sleep(3000);
+        setState(new State("running", "运行中..."));
         File file = new File(getJudgeUuid().getUuid() + "/out.out");
 
         boolean test = file.setExecutable(true);
@@ -81,5 +84,7 @@ public class CppJudge extends Judge{
             System.out.println(line);
             line = process.inputReader().readLine();
         }
+        Thread.sleep(3000);
+        setState(new State("success", "通过"));
     }
 }

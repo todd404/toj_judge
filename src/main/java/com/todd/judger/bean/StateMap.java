@@ -4,12 +4,12 @@ package com.todd.judger.bean;
 import com.todd.judger.Model.State;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class StateMap {
-    private static final Map<String, State> state = new HashMap<>();
+    private static final Map<String, State> state = new ConcurrentHashMap<>();
     public void setState(String uuid, State s){
         state.put(uuid, s);
     }
