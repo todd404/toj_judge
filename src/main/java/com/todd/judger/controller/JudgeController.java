@@ -3,13 +3,10 @@ package com.todd.judger.controller;
 import com.todd.judger.Model.JudgeUuid;
 import com.todd.judger.Model.PostJudgeForm;
 import com.todd.judger.Model.State;
-import com.todd.judger.bean.Judge.CppJudge;
 import com.todd.judger.bean.Judge.Judge;
 import com.todd.judger.bean.StateMap;
 import com.todd.judger.util.SpringContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -32,9 +29,13 @@ public class JudgeController {
         Judge judge = springContextHolder.getJudge(judgeName);
 
         judge.setJudgeUuid(judgeUuid);
+        judge.setExecuteTime(form.getExecute_time());
+        judge.setMemory(form.getMemory());
+        judge.setProblemId(form.getProblemId());
+
         judge.judgeCode(form.getProblemId(), form.getCode());
 
-        stateMap.setState(judgeUuid.getUuid(), new State("queuing", "排队中..."));
+        stateMap.putState(judgeUuid.getUuid(), new State("queuing", "排队中..."));
 
         return judgeUuid;
     }

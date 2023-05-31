@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class StateMap {
     private static final Map<String, State> state = new ConcurrentHashMap<>();
-    public void setState(String uuid, State s){
+    public void putState(String uuid, State s){
         state.put(uuid, s);
     }
 

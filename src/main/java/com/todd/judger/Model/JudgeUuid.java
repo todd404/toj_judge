@@ -16,4 +16,9 @@ public class JudgeUuid {
     public void setUuid(String uuid) {
         this.uuid = uuid;
     }
+
+    @Override
+    public String toString() {
+        return uuid;
+    }
 }

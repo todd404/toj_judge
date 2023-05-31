@@ -1,19 +1,16 @@
 package com.todd.judger.bean.Judge;
 
-import com.todd.judger.Model.JudgeUuid;
 import com.todd.judger.Model.State;
-import com.todd.judger.bean.StateMap;
 import com.todd.judger.exception.CompleteException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.todd.judger.exception.RunningException;
+import com.todd.judger.util.MyUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 @Component("cppJudge")
@@ -27,26 +24,29 @@ public class CppJudge extends Judge{
             complete(code);
             run();
         }catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+            putState(new State("error", "未知错误，请联系管理员"));
         }catch (CompleteException exception){
-            setState(new State("complete error", exception.getMessage()));
+            putState(new State("complete error", exception.getMessage()));
+        }catch (RunningException exception){
+            putState(new State("running error", exception.getMessage()));
+        }finally {
+
         }
     }
 
     private void complete(String code) throws IOException, InterruptedException, CompleteException {
-        Thread.sleep(3000);
-        setState(new State("completing", "编译中..."));
-        File file = File.createTempFile(getJudgeUuid().getUuid(), ".cpp");
-        FileWriter fileWriter = new FileWriter(file);
+        putState(new State("completing", "编译中..."));
+        File tempCodeFile = File.createTempFile(getJudgeUuid().getUuid(), ".cpp");
+        FileWriter fileWriter = new FileWriter(tempCodeFile);
         fileWriter.write(code);
         fileWriter.close();
 
-        File dir = new File(getJudgeUuid().getUuid());
-        dir.mkdir();
+        File uuidDir = new File(getJudgeUuid().getUuid());
+        uuidDir.mkdir();
 
         ProcessBuilder processBuilder = new ProcessBuilder("clang++",
-                file.getAbsolutePath(),
-                "-o", getJudgeUuid().getUuid() + "/" + "out.out");
+                tempCodeFile.getAbsolutePath(),
+                "-o", uuidDir.getPath() + "/" + "out.out");
         Process process = processBuilder.start();
 
         process.waitFor();
@@ -55,36 +55,113 @@ public class CppJudge extends Judge{
         }
     }
 
-    private void run() throws IOException, InterruptedException {
-        Thread.sleep(3000);
-        setState(new State("running", "运行中..."));
+    private void run() throws IOException, InterruptedException, RunningException {
+        putState(new State("running", "运行中..."));
         File file = new File(getJudgeUuid().getUuid() + "/out.out");
 
-        boolean test = file.setExecutable(true);
+        boolean setExecutableResult = file.setExecutable(true);
+        if(!setExecutableResult){
+            throw new RunningException("设置程序执行失败...");
+        }
 
-        ProcessBuilder processBuilder = new ProcessBuilder("/usr/bin/time",
-                "-f", "%x, %E, %M",
+        downloadFiles();
+
+        File testFile = new File(getJudgeUuid().getUuid() + "/test.txt");
+        File answerFile = new File(getJudgeUuid().getUuid() + "/answer.txt");
+
+        ProcessBuilder processBuilder = new ProcessBuilder(
+                "/usr/bin/time",
+                "-f", "%e,%M",
                 file.getAbsolutePath());
 
-        File testFile = new File("/home/toddwu/test/test.txt");
         processBuilder.redirectInput(testFile);
 
         Process process = processBuilder.start();
 
-        process.waitFor();
-        String line = process.errorReader().readLine();
-
-        while (line != null){
-            System.out.println(line);
-            line = process.errorReader().readLine();
+        var waitResult = process.waitFor(getExecuteTime(), TimeUnit.MILLISECONDS);
+        if(!waitResult){
+            //超时
+            throw new RunningException("超过运行时间限制！");
         }
 
-        line = process.inputReader().readLine();
-        while (line != null){
-            System.out.println(line);
-            line = process.inputReader().readLine();
+        //TODO: 是否要加个返回值是否为0的判断？是否与下面的错误检查重复？
+
+        //通过检查err流检查运行是否有错误
+        //注意：time指令的输出也在错误流里，在最后一行，如果错误流一行也没有说明运行异常
+        String errorLine ;
+        ArrayList<String> errorLineList = new ArrayList<>();
+        while ((errorLine = process.errorReader().readLine()) != null){
+            errorLineList.add(errorLine);
         }
-        Thread.sleep(3000);
-        setState(new State("success", "通过"));
+
+        if(errorLineList.size() > 1){
+            StringBuilder result = new StringBuilder();
+            for(int i = 0; i < errorLineList.size() - 1; i++){
+                result.append(errorLineList.get(i)).append("\n");
+            }
+            throw new RunningException(result.toString().trim());
+        }
+
+        //获取time指令输出，判断是否超时或超内存
+        String timeLine = errorLineList.get(errorLineList.size() - 1);
+        if(timeLine != null){
+            var splitTime = timeLine.split(",");
+            double executeTime = Double.parseDouble(splitTime[0]);
+            Integer memory = Integer.valueOf(splitTime[1]);
+
+            if(executeTime > getExecuteTime()){
+                throw new RunningException("超过运行时间限制！");
+            }
+
+            if(memory > getMemory()){
+                throw new RunningException("超过内存限制！");
+            }
+        }else{
+            throw new RunningException("未知错误请联系管理员！");
+        }
+
+        //判题
+        BufferedReader inputReader = process.inputReader();
+        Scanner answerScanner = new Scanner(answerFile);
+        String resultLine;
+        while ((resultLine = inputReader.readLine()) != null){
+            String trimResultLine = resultLine.trim();
+            if(trimResultLine.isEmpty()){
+                //跳过空行，让判题体验更好，也就是输出格式不一定要和答案完全一致，内容一致即可。
+                continue;
+            }
+
+            if(answerScanner.hasNext()){
+                String answerLine = answerScanner.nextLine().trim();
+                if(trimResultLine.equals(answerLine)){
+                    continue;
+                }else{
+                    throw new RunningException("答案错误!");
+                }
+            }else{
+                throw new RunningException("答案错误!");
+            }
+        }
+
+        if(answerScanner.hasNext()){
+            throw new RunningException("答案错误!");
+        }
+
+        putState(new State("success", "通过"));
+    }
+
+    private void downloadFiles() throws IOException, RunningException {
+        String testFileUrl = String.format("http://%s/%s.txt", "localhost:5000", getProblemId());
+        String answerFileUrl = String.format("http://%s/%s.txt", "localhost:5001", getProblemId());
+
+        File testFile = new File(getJudgeUuid().getUuid() + "/test.txt");
+        File answerFile = new File(getJudgeUuid().getUuid() + "/answer.txt");
+
+        if(!testFile.createNewFile() || !answerFile.createNewFile()){
+            throw new RunningException("创建对应文件失败...");
+        }
+
+        MyUtils.downloadFile(testFileUrl, testFile.getPath());
+        MyUtils.downloadFile(answerFileUrl, answerFile.getPath());
     }
 }
