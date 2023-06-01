@@ -1,5 +1,6 @@
 package com.todd.judger.bean.Judge;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.todd.judger.Model.State;
 import com.todd.judger.exception.CompleteException;
 import com.todd.judger.exception.RunningException;
@@ -9,7 +10,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
@@ -23,14 +30,62 @@ public class CppJudge extends Judge{
         try{
             complete(code);
             run();
-        }catch (IOException | InterruptedException e) {
+        }catch (Exception e) {
             putState(new State("error", "未知错误，请联系管理员"));
         }catch (CompleteException exception){
             putState(new State("complete error", exception.getMessage()));
         }catch (RunningException exception){
             putState(new State("running error", exception.getMessage()));
         }finally {
+            try {
+                reportResult();
+                cleanUuidDir();
+            } catch (URISyntaxException | IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
+    @Override
+    protected void reportResult() throws URISyntaxException, IOException, InterruptedException {
+        Map<String, String> resultMap = new HashMap<>();
+        resultMap.put("history_id", String.valueOf(getHistoryId()));
+        State resultState = getState(getJudgeUuid().getUuid());
+
+        resultMap.put("time", "N/A");
+        resultMap.put("memory", "N/A");
+
+        String state = "";
+        String resultStateValue = resultState.getState();
+        switch (resultStateValue) {
+            case "success" -> {
+                state = "通过";
+                resultMap.put("time", String.valueOf(getResultExecuteTime()));
+                resultMap.put("memory", String.valueOf(getResultMemory()));
+            }
+            case "running error" -> state = resultState.getMessage();
+            case "complete error" -> state = "编译错误";
+            default -> state = "未知错误";
+        }
+
+        resultMap.put("state", state);
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String resultJson = objectMapper.writeValueAsString(resultMap);
+        HttpRequest reportRequest = HttpRequest.newBuilder()
+                .uri(getReportUri())
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(resultJson))
+                .build();
+        HttpClient client = HttpClient.newBuilder().build();
+        client.send(reportRequest, HttpResponse.BodyHandlers.ofString());
+    }
+
+    @Override
+    protected void cleanUuidDir() {
+        File dir = new File(getJudgeUuid().getUuid());
+        if(dir.exists()){
+            dir.delete();
         }
     }
 
@@ -55,15 +110,16 @@ public class CppJudge extends Judge{
         }
     }
 
-    private void run() throws IOException, InterruptedException, RunningException {
+    private void run() throws Exception, RunningException {
         putState(new State("running", "运行中..."));
         File file = new File(getJudgeUuid().getUuid() + "/out.out");
 
         boolean setExecutableResult = file.setExecutable(true);
         if(!setExecutableResult){
-            throw new RunningException("设置程序执行失败...");
+            throw new Exception("设置程序执行失败...");
         }
 
+        //下载测试和答案文件
         downloadFiles();
 
         File testFile = new File(getJudgeUuid().getUuid() + "/test.txt");
@@ -81,7 +137,7 @@ public class CppJudge extends Judge{
         var waitResult = process.waitFor(getExecuteTime(), TimeUnit.MILLISECONDS);
         if(!waitResult){
             //超时
-            throw new RunningException("超过运行时间限制！");
+            throw new RunningException("超过运行时间限制");
         }
 
         //TODO: 是否要加个返回值是否为0的判断？是否与下面的错误检查重复？
@@ -110,14 +166,17 @@ public class CppJudge extends Judge{
             Integer memory = Integer.valueOf(splitTime[1]);
 
             if(executeTime > getExecuteTime()){
-                throw new RunningException("超过运行时间限制！");
+                throw new RunningException("超过运行时间限制");
             }
 
             if(memory > getMemory()){
-                throw new RunningException("超过内存限制！");
+                throw new RunningException("超过内存限制");
             }
+
+            setResultExecuteTime(executeTime);
+            setResultMemory(memory);
         }else{
-            throw new RunningException("未知错误请联系管理员！");
+            throw new Exception("未知错误请联系管理员！");
         }
 
         //判题
@@ -136,23 +195,23 @@ public class CppJudge extends Judge{
                 if(trimResultLine.equals(answerLine)){
                     continue;
                 }else{
-                    throw new RunningException("答案错误!");
+                    throw new RunningException("答案错误");
                 }
             }else{
-                throw new RunningException("答案错误!");
+                throw new RunningException("答案错误");
             }
         }
 
         if(answerScanner.hasNext()){
-            throw new RunningException("答案错误!");
+            throw new RunningException("答案错误");
         }
 
         putState(new State("success", "通过"));
     }
 
     private void downloadFiles() throws IOException, RunningException {
-        String testFileUrl = String.format("http://%s/%s.txt", "localhost:5000", getProblemId());
-        String answerFileUrl = String.format("http://%s/%s.txt", "localhost:5001", getProblemId());
+        String testFileUrl = String.format("http://%s/test/%s.txt", "192.168.31.168:8080", getProblemId());
+        String answerFileUrl = String.format("http://%s/answer/%s.txt", "192.168.31.168:8080", getProblemId());
 
         File testFile = new File(getJudgeUuid().getUuid() + "/test.txt");
         File answerFile = new File(getJudgeUuid().getUuid() + "/answer.txt");

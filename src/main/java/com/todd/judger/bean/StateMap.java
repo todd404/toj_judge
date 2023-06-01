@@ -21,4 +21,5 @@ public class StateMap {
     public Boolean hasUuid(String uuid){
         return state.containsKey(uuid);
     }
+    public void deleteState(String uuid){ state.remove(uuid); }
 }

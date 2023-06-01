@@ -32,6 +32,7 @@ public class JudgeController {
         judge.setExecuteTime(form.getExecute_time());
         judge.setMemory(form.getMemory());
         judge.setProblemId(form.getProblemId());
+        judge.setHistoryId(form.getHistoryId());
 
         judge.judgeCode(form.getProblemId(), form.getCode());
 
