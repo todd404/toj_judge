@@ -1,6 +1,7 @@
 package com.todd.judger.bean.Judge;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
 import com.todd.judger.Model.State;
 import com.todd.judger.exception.CompleteException;
 import com.todd.judger.exception.RunningException;
@@ -40,6 +41,7 @@ public class CppJudge extends Judge{
             try {
                 reportResult();
                 cleanUuidDir();
+
             } catch (URISyntaxException | IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -71,26 +73,34 @@ public class CppJudge extends Judge{
         resultMap.put("state", state);
 
         ObjectMapper objectMapper = new ObjectMapper();
-        String resultJson = objectMapper.writeValueAsString(resultMap);
+        String result = Joiner.on("&")
+                .useForNull("")
+                .withKeyValueSeparator("=")
+                .join(resultMap);
         HttpRequest reportRequest = HttpRequest.newBuilder()
                 .uri(getReportUri())
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(resultJson))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(result))
                 .build();
         HttpClient client = HttpClient.newBuilder().build();
-        client.send(reportRequest, HttpResponse.BodyHandlers.ofString());
+        var res = client.send(reportRequest, HttpResponse.BodyHandlers.ofString());
     }
 
     @Override
     protected void cleanUuidDir() {
         File dir = new File(getJudgeUuid().getUuid());
         if(dir.exists()){
+            for(var file : dir.listFiles()){
+                file.delete();
+            }
+
             dir.delete();
         }
     }
 
     private void complete(String code) throws IOException, InterruptedException, CompleteException {
         putState(new State("completing", "编译中..."));
+        Thread.sleep(2000);
         File tempCodeFile = File.createTempFile(getJudgeUuid().getUuid(), ".cpp");
         FileWriter fileWriter = new FileWriter(tempCodeFile);
         fileWriter.write(code);
@@ -112,6 +122,7 @@ public class CppJudge extends Judge{
 
     private void run() throws Exception, RunningException {
         putState(new State("running", "运行中..."));
+        Thread.sleep(2000);
         File file = new File(getJudgeUuid().getUuid() + "/out.out");
 
         boolean setExecutableResult = file.setExecutable(true);

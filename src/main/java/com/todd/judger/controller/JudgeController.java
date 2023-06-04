@@ -20,7 +20,6 @@ public class JudgeController {
     SpringContextHolder springContextHolder;
 
     @PostMapping("/api/judge")
-    @CrossOrigin
     public JudgeUuid judge(@ModelAttribute PostJudgeForm form){
         JudgeUuid judgeUuid = new JudgeUuid(UUID.randomUUID());
 

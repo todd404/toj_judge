@@ -88,6 +88,6 @@ public abstract class Judge {
     }
 
     public URI getReportUri() throws URISyntaxException {
-        return new URI(String.format("http://192.168.31.168/api/set-state"));
+        return new URI(String.format("http://192.168.31.168:8080/api/set-state"));
     }
 }
