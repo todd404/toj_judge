@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -41,7 +42,6 @@ public class CppJudge extends Judge{
             try {
                 reportResult();
                 cleanUuidDir();
-
             } catch (URISyntaxException | IOException | InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -54,15 +54,15 @@ public class CppJudge extends Judge{
         resultMap.put("history_id", String.valueOf(getHistoryId()));
         State resultState = getState(getJudgeUuid().getUuid());
 
-        resultMap.put("time", "N/A");
-        resultMap.put("memory", "N/A");
+        resultMap.put("execute_time", "-1");
+        resultMap.put("memory", "-1");
 
         String state = "";
         String resultStateValue = resultState.getState();
         switch (resultStateValue) {
             case "success" -> {
                 state = "通过";
-                resultMap.put("time", String.valueOf(getResultExecuteTime()));
+                resultMap.put("execute_time", String.valueOf(getResultExecuteTime()));
                 resultMap.put("memory", String.valueOf(getResultMemory()));
             }
             case "running error" -> state = resultState.getMessage();
@@ -70,16 +70,14 @@ public class CppJudge extends Judge{
             default -> state = "未知错误";
         }
 
-        resultMap.put("state", state);
+        resultMap.put("result", state);
 
         ObjectMapper objectMapper = new ObjectMapper();
-        String result = Joiner.on("&")
-                .useForNull("")
-                .withKeyValueSeparator("=")
-                .join(resultMap);
+        String result = objectMapper.writeValueAsString(resultMap);
+
         HttpRequest reportRequest = HttpRequest.newBuilder()
-                .uri(getReportUri())
-                .header("Content-Type", "application/x-www-form-urlencoded")
+                .uri(URI.create("http://192.168.1.100/api/set-result"))
+                .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(result))
                 .build();
         HttpClient client = HttpClient.newBuilder().build();
@@ -100,7 +98,6 @@ public class CppJudge extends Judge{
 
     private void complete(String code) throws IOException, InterruptedException, CompleteException {
         putState(new State("completing", "编译中..."));
-        Thread.sleep(2000);
         File tempCodeFile = File.createTempFile(getJudgeUuid().getUuid(), ".cpp");
         FileWriter fileWriter = new FileWriter(tempCodeFile);
         fileWriter.write(code);
@@ -122,7 +119,6 @@ public class CppJudge extends Judge{
 
     private void run() throws Exception, RunningException {
         putState(new State("running", "运行中..."));
-        Thread.sleep(2000);
         File file = new File(getJudgeUuid().getUuid() + "/out.out");
 
         boolean setExecutableResult = file.setExecutable(true);
@@ -221,8 +217,8 @@ public class CppJudge extends Judge{
     }
 
     private void downloadFiles() throws IOException, RunningException {
-        String testFileUrl = String.format("http://%s/test/%s.txt", "192.168.31.168:8080", getProblemId());
-        String answerFileUrl = String.format("http://%s/answer/%s.txt", "192.168.31.168:8080", getProblemId());
+        String testFileUrl = String.format("http://%s/test/%s.txt", "192.168.1.100", getProblemId());
+        String answerFileUrl = String.format("http://%s/answer/%s.txt", "192.168.1.100", getProblemId());
 
         File testFile = new File(getJudgeUuid().getUuid() + "/test.txt");
         File answerFile = new File(getJudgeUuid().getUuid() + "/answer.txt");

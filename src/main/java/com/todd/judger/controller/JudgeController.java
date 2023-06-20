@@ -19,8 +19,8 @@ public class JudgeController {
     @Autowired
     SpringContextHolder springContextHolder;
 
-    @PostMapping("/api/judge")
-    public JudgeUuid judge(@ModelAttribute PostJudgeForm form){
+    @PostMapping("/judge")
+    public JudgeUuid judge(@RequestBody PostJudgeForm form){
         JudgeUuid judgeUuid = new JudgeUuid(UUID.randomUUID());
 
         String judgeName = form.getLanguage() + "Judge";
@@ -28,7 +28,7 @@ public class JudgeController {
         Judge judge = springContextHolder.getJudge(judgeName);
 
         judge.setJudgeUuid(judgeUuid);
-        judge.setExecuteTime(form.getExecute_time());
+        judge.setExecuteTime(form.getExecuteTime());
         judge.setMemory(form.getMemory());
         judge.setProblemId(form.getProblemId());
         judge.setHistoryId(form.getHistoryId());
@@ -40,7 +40,7 @@ public class JudgeController {
         return judgeUuid;
     }
 
-    @GetMapping("/api/state")
+    @GetMapping("/state")
     @CrossOrigin
     public State getState(@RequestParam("uuid") String uuid){
         State result = new State("error uuid", "判题任务出错...");
