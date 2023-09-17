@@ -1,10 +1,10 @@
 package com.todd.judger.controller;
 
-import com.todd.judger.Model.JudgeUuid;
-import com.todd.judger.Model.PostJudgeForm;
-import com.todd.judger.Model.State;
-import com.todd.judger.bean.Judge.Judge;
-import com.todd.judger.bean.StateMap;
+import com.todd.judger.pojo.JudgeUuid;
+import com.todd.judger.pojo.PostJudgeForm;
+import com.todd.judger.pojo.State;
+import com.todd.judger.judge.Judge.Judge;
+import com.todd.judger.judge.StateMap;
 import com.todd.judger.util.SpringContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

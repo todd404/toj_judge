@@ -1,4 +1,4 @@
-package com.todd.judger.Model;
+package com.todd.judger.pojo;
 
 import java.util.UUID;
 

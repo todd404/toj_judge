@@ -1,7 +1,7 @@
-package com.todd.judger.bean;
+package com.todd.judger.judge;
 
 
-import com.todd.judger.Model.State;
+import com.todd.judger.pojo.State;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;

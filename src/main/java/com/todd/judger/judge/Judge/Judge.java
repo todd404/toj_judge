@@ -1,19 +1,19 @@
-package com.todd.judger.bean.Judge;
+package com.todd.judger.judge.Judge;
 
-import com.todd.judger.Model.JudgeUuid;
-import com.todd.judger.Model.State;
-import com.todd.judger.bean.StateMap;
+import com.todd.judger.pojo.JudgeUuid;
+import com.todd.judger.pojo.State;
+import com.todd.judger.judge.StateMap;
+import com.todd.judger.pojo.config.BackendServerConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 
 @Component
 public abstract class Judge {
     private JudgeUuid judgeUuid;
-    private Integer executeTime;
+    private Double executeTime;
     private Integer memory;
 
     private Double resultExecuteTime;
@@ -22,6 +22,24 @@ public abstract class Judge {
     private Integer historyId;
     @Autowired
     private StateMap stateMap;
+    @Autowired
+    private BackendServerConfig backendServerConfig;
+
+    public StateMap getStateMap() {
+        return stateMap;
+    }
+
+    public void setStateMap(StateMap stateMap) {
+        this.stateMap = stateMap;
+    }
+
+    public BackendServerConfig getBackendServerConfig() {
+        return backendServerConfig;
+    }
+
+    public void setBackendServerConfig(BackendServerConfig backendServerConfig) {
+        this.backendServerConfig = backendServerConfig;
+    }
 
     public void putState(State state){
         stateMap.putState(judgeUuid.getUuid(), state);
@@ -39,11 +57,11 @@ public abstract class Judge {
         this.judgeUuid = judgeUuid;
     }
 
-    public Integer getExecuteTime() {
+    public Double getExecuteTime() {
         return executeTime;
     }
 
-    public void setExecuteTime(Integer executeTime) {
+    public void setExecuteTime(Double executeTime) {
         this.executeTime = executeTime;
     }
 
@@ -85,9 +103,5 @@ public abstract class Judge {
 
     public void setResultMemory(Integer resultMemory) {
         this.resultMemory = resultMemory;
-    }
-
-    public URI getReportUri() throws URISyntaxException {
-        return new URI(String.format("http://192.168.31.168:8080/api/set-state"));
     }
 }

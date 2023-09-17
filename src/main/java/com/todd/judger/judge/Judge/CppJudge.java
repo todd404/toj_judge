@@ -1,8 +1,7 @@
-package com.todd.judger.bean.Judge;
+package com.todd.judger.judge.Judge;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
-import com.todd.judger.Model.State;
+import com.todd.judger.pojo.State;
 import com.todd.judger.exception.CompleteException;
 import com.todd.judger.exception.RunningException;
 import com.todd.judger.util.MyUtils;
@@ -76,7 +75,7 @@ public class CppJudge extends Judge{
         String result = objectMapper.writeValueAsString(resultMap);
 
         HttpRequest reportRequest = HttpRequest.newBuilder()
-                .uri(URI.create("http://192.168.1.100/api/set-result"))
+                .uri(URI.create("http://%s/api/set-result".formatted(getBackendServerConfig().getHost())))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(result))
                 .build();
@@ -141,7 +140,7 @@ public class CppJudge extends Judge{
 
         Process process = processBuilder.start();
 
-        var waitResult = process.waitFor(getExecuteTime(), TimeUnit.MILLISECONDS);
+        var waitResult = process.waitFor(Math.round(getExecuteTime()), TimeUnit.MILLISECONDS);
         if(!waitResult){
             //超时
             throw new RunningException("超过运行时间限制");
@@ -217,8 +216,8 @@ public class CppJudge extends Judge{
     }
 
     private void downloadFiles() throws IOException, RunningException {
-        String testFileUrl = String.format("http://%s/test/%s.txt", "192.168.1.100", getProblemId());
-        String answerFileUrl = String.format("http://%s/answer/%s.txt", "192.168.1.100", getProblemId());
+        String testFileUrl = String.format("http://%s/test/%s.txt", getBackendServerConfig().getHost(), getProblemId());
+        String answerFileUrl = String.format("http://%s/answer/%s.txt", getBackendServerConfig().getHost(), getProblemId());
 
         File testFile = new File(getJudgeUuid().getUuid() + "/test.txt");
         File answerFile = new File(getJudgeUuid().getUuid() + "/answer.txt");

@@ -1,4 +1,4 @@
-package com.todd.judger.Model;
+package com.todd.judger.pojo;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,7 +9,7 @@ public class PostJudgeForm {
     private String code;
     private String language;
     @JsonProperty("execute_time")
-    private Integer executeTime;
+    private Double executeTime;
     private Integer memory;
     @JsonProperty("history_id")
     private Integer historyId;
@@ -38,11 +38,11 @@ public class PostJudgeForm {
         this.language = language;
     }
 
-    public Integer getExecuteTime() {
+    public Double getExecuteTime() {
         return executeTime;
     }
 
-    public void setExecuteTime(Integer executeTime) {
+    public void setExecuteTime(Double executeTime) {
         this.executeTime = executeTime;
     }
 

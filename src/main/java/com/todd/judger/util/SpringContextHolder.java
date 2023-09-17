@@ -1,6 +1,6 @@
 package com.todd.judger.util;
 
-import com.todd.judger.bean.Judge.Judge;
+import com.todd.judger.judge.Judge.Judge;
 import org.springframework.context.support.ApplicationObjectSupport;
 import org.springframework.stereotype.Component;
 
