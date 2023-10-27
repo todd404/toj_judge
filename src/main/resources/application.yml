@@ -4,4 +4,12 @@ server:
 
 backend-server:
   address: 192.168.1.131
+  port: 8080
+
+nginx-server:
+  address: 192.168.1.131
   port: 80
+
+scheduler-server:
+  address: 192.168.1.131
+  port: 7000

@@ -4,6 +4,8 @@ import com.todd.judger.pojo.JudgeUuid;
 import com.todd.judger.pojo.State;
 import com.todd.judger.judge.StateMap;
 import com.todd.judger.pojo.config.BackendServerConfig;
+import com.todd.judger.pojo.config.NginxServerConfig;
+import com.todd.judger.pojo.config.SchedulerServerConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +26,14 @@ public abstract class Judge {
     private StateMap stateMap;
     @Autowired
     private BackendServerConfig backendServerConfig;
+    @Autowired
+    private NginxServerConfig nginxServerConfig;
+    @Autowired
+    private SchedulerServerConfig schedulerServerConfig;
+
+    public SchedulerServerConfig getSchedulerServerConfig() {
+        return schedulerServerConfig;
+    }
 
     public StateMap getStateMap() {
         return stateMap;
@@ -36,6 +46,7 @@ public abstract class Judge {
     public BackendServerConfig getBackendServerConfig() {
         return backendServerConfig;
     }
+    public NginxServerConfig getNginxServerConfig() {return nginxServerConfig; }
 
     public void setBackendServerConfig(BackendServerConfig backendServerConfig) {
         this.backendServerConfig = backendServerConfig;

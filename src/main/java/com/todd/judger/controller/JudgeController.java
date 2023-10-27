@@ -52,4 +52,11 @@ public class JudgeController {
 
         return result;
     }
+
+    @GetMapping("/ping")
+    @CrossOrigin
+    public String ping()
+    {
+        return "pong";
+    }
 }

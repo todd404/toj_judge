@@ -33,6 +33,7 @@ public class CppJudge extends Judge{
             run();
         }catch (Exception e) {
             putState(new State("error", "未知错误，请联系管理员"));
+            e.printStackTrace();
         }catch (CompleteException exception){
             putState(new State("complete error", exception.getMessage()));
         }catch (RunningException exception){
@@ -53,6 +54,7 @@ public class CppJudge extends Judge{
         resultMap.put("history_id", String.valueOf(getHistoryId()));
         State resultState = getState(getJudgeUuid().getUuid());
 
+        resultMap.put("uuid", getJudgeUuid().getUuid());
         resultMap.put("execute_time", "-1");
         resultMap.put("memory", "-1");
 
@@ -75,7 +77,7 @@ public class CppJudge extends Judge{
         String result = objectMapper.writeValueAsString(resultMap);
 
         HttpRequest reportRequest = HttpRequest.newBuilder()
-                .uri(URI.create("http://%s/api/set-result".formatted(getBackendServerConfig().getHost())))
+                .uri(URI.create("http://%s/api/set-result".formatted(getSchedulerServerConfig().getHost())))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(result))
                 .build();
@@ -216,8 +218,8 @@ public class CppJudge extends Judge{
     }
 
     private void downloadFiles() throws IOException, RunningException {
-        String testFileUrl = String.format("http://%s/test/%s.txt", getBackendServerConfig().getHost(), getProblemId());
-        String answerFileUrl = String.format("http://%s/answer/%s.txt", getBackendServerConfig().getHost(), getProblemId());
+        String testFileUrl = String.format("http://%s/test/%s.txt", getNginxServerConfig().getHost(), getProblemId());
+        String answerFileUrl = String.format("http://%s/answer/%s.txt", getNginxServerConfig().getHost(), getProblemId());
 
         File testFile = new File(getJudgeUuid().getUuid() + "/test.txt");
         File answerFile = new File(getJudgeUuid().getUuid() + "/answer.txt");
