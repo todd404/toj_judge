@@ -2,11 +2,7 @@ server:
   port: 9000
   address: 0.0.0.0
 
-backend-server:
-  address: 192.168.1.131
-  port: 8080
-
-nginx-server:
+file-service:
   address: 192.168.1.131
   port: 80
 

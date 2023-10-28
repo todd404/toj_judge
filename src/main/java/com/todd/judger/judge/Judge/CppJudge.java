@@ -218,8 +218,8 @@ public class CppJudge extends Judge{
     }
 
     private void downloadFiles() throws IOException, RunningException {
-        String testFileUrl = String.format("http://%s/test/%s.txt", getNginxServerConfig().getHost(), getProblemId());
-        String answerFileUrl = String.format("http://%s/answer/%s.txt", getNginxServerConfig().getHost(), getProblemId());
+        String testFileUrl = String.format("http://%s/test/%s.txt", getFileServiceConfig().getHost(), getProblemId());
+        String answerFileUrl = String.format("http://%s/answer/%s.txt", getFileServiceConfig().getHost(), getProblemId());
 
         File testFile = new File(getJudgeUuid().getUuid() + "/test.txt");
         File answerFile = new File(getJudgeUuid().getUuid() + "/answer.txt");

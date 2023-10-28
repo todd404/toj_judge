@@ -4,8 +4,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "nginx-server")
-public class NginxServerConfig {
+@ConfigurationProperties(prefix = "file-service")
+public class FileServiceConfig {
     private String address;
     private String port;
 
