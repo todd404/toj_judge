@@ -2,6 +2,7 @@ package com.todd.judger.judge;
 
 
 import com.todd.judger.pojo.State;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;

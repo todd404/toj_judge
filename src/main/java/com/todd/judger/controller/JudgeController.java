@@ -32,7 +32,6 @@ public class JudgeController {
         judge.setMemory(form.getMemory());
         judge.setProblemId(form.getProblemId());
         judge.setHistoryId(form.getHistoryId());
-
         judge.judgeCode(form.getProblemId(), form.getCode());
 
         stateMap.putState(judgeUuid.getUuid(), new State("queuing", "排队中..."));

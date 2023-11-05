@@ -1,15 +1,18 @@
 package com.todd.judger.judge.Judge;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.todd.judger.pojo.State;
 import com.todd.judger.exception.CompleteException;
 import com.todd.judger.exception.RunningException;
+import com.todd.judger.pojo.State;
 import com.todd.judger.util.MyUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -21,10 +24,9 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
-@Component("cppJudge")
+@Component("javaJudge")
 @Scope("prototype")
-public class CppJudge extends Judge{
-
+public class JavaJudge extends Judge{
     @Override
     @Async
     public void judgeCode(long problemId, String code) {
@@ -43,7 +45,7 @@ public class CppJudge extends Judge{
                 cleanUuidDir();
                 reportResult();
             } catch (URISyntaxException | IOException | InterruptedException e) {
-                throw new RuntimeException(e);
+                e.printStackTrace(System.err);
             }
         }
     }
@@ -99,17 +101,17 @@ public class CppJudge extends Judge{
 
     private void complete(String code) throws IOException, InterruptedException, CompleteException {
         putState(new State("completing", "编译中..."));
-        File tempCodeFile = File.createTempFile(getJudgeUuid().getUuid(), ".cpp");
-        FileWriter fileWriter = new FileWriter(tempCodeFile);
+
+        File uuidDir = new File(getJudgeUuid().getUuid());
+        var err = uuidDir.mkdir();
+        File solutionFile = new File(uuidDir, "Solution.java");
+        err = solutionFile.createNewFile();
+        FileWriter fileWriter = new FileWriter(solutionFile);
         fileWriter.write(code);
         fileWriter.close();
 
-        File uuidDir = new File(getJudgeUuid().getUuid());
-        uuidDir.mkdir();
-
-        ProcessBuilder processBuilder = new ProcessBuilder("clang++",
-                tempCodeFile.getAbsolutePath(),
-                "-o", uuidDir.getPath() + "/" + "out.out");
+        ProcessBuilder processBuilder = new ProcessBuilder("javac",
+                solutionFile.getAbsolutePath());
         Process process = processBuilder.start();
 
         process.waitFor();
@@ -120,9 +122,9 @@ public class CppJudge extends Judge{
 
     private void run() throws Exception, RunningException {
         putState(new State("running", "运行中..."));
-        File file = new File(getJudgeUuid().getUuid() + "/out.out");
+        File solutionFile = new File(getJudgeUuid().getUuid() + "/Solution.class");
 
-        boolean setExecutableResult = file.setExecutable(true);
+        boolean setExecutableResult = solutionFile.setExecutable(true);
         if(!setExecutableResult){
             throw new Exception("设置程序执行失败...");
         }
@@ -136,8 +138,9 @@ public class CppJudge extends Judge{
         ProcessBuilder processBuilder = new ProcessBuilder(
                 "/usr/bin/time",
                 "-f", "%e,%M",
-                file.getAbsolutePath());
+                "java", "Solution");
 
+        processBuilder.directory(new File(getJudgeUuid().getUuid()));
         processBuilder.redirectInput(testFile);
 
         Process process = processBuilder.start();

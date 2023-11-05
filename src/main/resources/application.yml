@@ -3,9 +3,9 @@ server:
   address: 0.0.0.0
 
 file-service:
-  address: 192.168.1.131
+  address: 192.168.31.14
   port: 80
 
 scheduler-server:
-  address: 192.168.1.131
+  address: 192.168.31.14
   port: 7000
